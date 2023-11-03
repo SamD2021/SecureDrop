@@ -1,5 +1,6 @@
 import os
 import json
+import getpass
 
 #specify path to user information
 path = '/home/student/milestone1/users.txt'
@@ -13,7 +14,7 @@ if isExist == True:
 	toParse = o.read()
 
 	#if file only has 2 charcters it is 'empty' just a placeholder
-	if len(toParse) == 2:
+	if len(toParse) <= 2:
 		print('No users are registered with this client.'
 		      'Do you want to register a new user (y/n)?')
 		s = input(' ')
@@ -29,9 +30,17 @@ if isExist == True:
 			print('Enter e-mail address: ')
 			email = input(' ')
 			print('Enter password: ')
-			password = input(' ')
+			password = getpass.getpass()
 			print('Re-enter password: ')
-			repassword = input(' ')
+			repassword = getpass.getpass()
+
+			while password != repassword:
+				print('Passwords do not match. Re-enter password.')
+				print('Enter password: ')
+				password = getpass.getpass()
+				print('Re-enter password')
+				repassword = getpass.getpass()
+
 
 			#check to see if password and password re-entry match
 			if password == repassword:
