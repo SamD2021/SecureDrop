@@ -1,12 +1,12 @@
 from setuptools import setup
 
 setup(
-    name = 'SecureDrop',
+    name = 'userReg',
     version = '1.0.0',
     # ....
     entry_points = {
         'console_scripts': [
-            'myscript=userReg.cli:main',
+            'SecureDrop=userReg.cli:main',
         ],
     }
 )
