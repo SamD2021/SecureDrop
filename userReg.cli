@@ -1,6 +1,8 @@
 import os
 import json
 import getpass
+import hashlib 
+from cryptography.fernet import Fernet
 
 def main():
 	#specify path to user information
@@ -46,12 +48,23 @@ def main():
 				#check to see if password and password re-entry match
 				if password == repassword:
 					print('Passwords match.')
+
+				# Password Salting: Adding salt to the password before hashing password using SHA-256
+				salt = "somesalt" 
+				salted_password = hashlib.sha256((password + salt).encode()).hexdigest() 
+
+				# Password Encryption: Encrypting and decrypting password using Fernet symmetric encryption 
+				key = Fernet.generate_key() 
+				cipher_suite = Fernet(key) 
+
+				# Encrypting password 
+				encrypted_password = cipher_suite.encrypt(salted_password.encode()).decode()
 	
 				#build user object to be sent to json file
 				user = {
 					'name': name,
 					'email': email,
-					'password': password
+					'password': encrypted_password
 				}
 	
 				#send object to json, write to file
