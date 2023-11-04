@@ -57,8 +57,33 @@ def login():
 
 	print('Welcome to SecureDrop.')
 	print('Type "help" For Commands.')
-	request = input(' secure_drop> ')
-	
+	while(request != 'exit'):
+		request = input(' secure_drop> ')
+		if request == 'help':
+			print('"add" -> Add a new contact')
+			print("list" -> List all online contacts)
+			print("send" -> Transfer file to contact)
+			print("exit" -> Exit SecureDrop)
+		elif request == 'add':
+			print('Enter full name: ')
+			name = input(' ')
+			print('Enter e-mail address: ')
+			email = input(' ')
+			#build user object to be sent to json file
+			contact = {
+				'name': name,
+				'email': email
+			}
+		
+			#send object to json, write to file
+			info = json.dumps(contact)
+			f = open('contacts.txt', "w")
+			f.write(info)
+			f.close
+		elif request == 'list':
+			print('will implement next')
+		elif request == 'send':
+			print('will implement after list')
 return
 
 def register():
