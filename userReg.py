@@ -1,11 +1,13 @@
 import os
+from os import path
 import json
+from registration import getInfo
 
 #specify path to user information
-path = '/home/student/milestone1/users.txt'
+user_path = path.join(os.getcwd(), "users.txt")
 
 #Check if the path exists
-isExist = os.path.exists(path)
+isExist = os.path.exists(user_path)
 
 #Open file and check if any users registered
 if isExist == True:
@@ -13,7 +15,7 @@ if isExist == True:
 	toParse = o.read()
 
 	#if file only has 2 charcters it is 'empty' just a placeholder
-	if len(toParse) == 2:
+	if len(toParse) < 2:
 		print('No users are registered with this client.'
 		      'Do you want to register a new user (y/n)?')
 		s = input(' ')
@@ -24,18 +26,19 @@ if isExist == True:
 
 		#elif want to register a user, prompt the different info and take in user input
 		elif s == 'y':
-			print('Enter full name: ')
-			name = input(' ')
-			print('Enter e-mail address: ')
-			email = input(' ')
-			print('Enter password: ')
-			password = input(' ')
-			print('Re-enter password: ')
-			repassword = input(' ')
-
-			#check to see if password and password re-entry match
-			if password == repassword:
-				print('Passwords match.')
+			# print('Enter full name: ')
+			# name = input(' ')
+			# print('Enter e-mail address: ')
+			# email = input(' ')
+			# print('Enter password: ')
+			# password = input(' ')
+			# print('Re-enter password: ')
+			# repassword = input(' ')
+			#
+			# #check to see if password and password re-entry match
+			# if password == repassword:
+			# 	print('Passwords match.')
+			name, email, password = getInfo()
 
 			#build user object to be sent to json file
 			user = {
@@ -48,5 +51,5 @@ if isExist == True:
 			info = json.dumps(user)
 			f = open('users.txt', "w")
 			f.write(info)
-			f.close
+			f.close()
 		#end elif
