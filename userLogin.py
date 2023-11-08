@@ -48,7 +48,7 @@ if isExist == True:
 			info = json.dumps(user)
 			f = open('users.txt', "w")
 			f.write(info)
-			f.close
+			f.close()
 		#end elif
 
 	#else: users already registered with client
