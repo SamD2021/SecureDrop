@@ -3,6 +3,7 @@ import json
 import getpass
 import hashlib 
 from cryptography.fernet import Fernet
+from registration import getInfo
 
 #specify path to user information
 path = '/home/student/milestone1/users.json'
@@ -27,26 +28,22 @@ if isExist == True:
 
 		#elif want to register a user, prompt the different info and take in user input
 		elif s == 'y':
-			print('Enter full name: ')
-			name = input(' ')
-			print('Enter e-mail address: ')
-			email = input(' ')
-			print('Enter password: ')
-			password = getpass.getpass()
-			print('Re-enter password: ')
-			repassword = getpass.getpass()
+			#print('Enter full name: ')
+			#name = input(' ')
+			#print('Enter e-mail address: ')
+			#email = input(' ')
+			#print('Enter password: ')
+			#password = getpass.getpass()
+			#print('Re-enter password: ')
+			#repassword = getpass.getpass()
 
-			while password != repassword:
-				print('Passwords do not match. Re-enter password.')
-				print('Enter password: ')
-				password = getpass.getpass()
-				print('Re-enter password')
-				repassword = getpass.getpass()
-
-
-			#check to see if password and password re-entry match
-			if password == repassword:
-				print('Passwords match.')
+			#while password != repassword:
+				#print('Passwords do not match. Re-enter password.')
+				#print('Enter password: ')
+				#password = getpass.getpass()
+				#print('Re-enter password')
+				#repassword = getpass.getpass()
+			name, email, password = getInfo()			
 
 			# Password Salting: Adding salt to the password for added security
 			salt = "somesalt"
