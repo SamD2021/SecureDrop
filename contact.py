@@ -1,16 +1,15 @@
 class Contact:
-    def __init__(self, full_name='none', email_address='none'):
-        self.__full_name = full_name
-        self.__email_address = email_address
+    def __init__(self, name='none', userid='none'):
+        self.__container = {'UserID': userid, 'Name': name}
 
-    def get_full_name(self):
-        return self.__full_name
+    def get_name(self):
+        return self.__container['Name']
 
-    def get_email_address(self):
-        return self.__email_address
+    def get_user_id(self):
+        return self.__container['UserID']
 
-    def set_full_name(self, full_name):
-        self.__full_name = full_name
+    def set_name(self, name):
+        self.__container['Name'] = name
 
-    def set_email_address(self, email_address):
-        self.__email_address = email_address
+    def set_user_id(self, user_id):
+        self.__container['UserID'] = user_id
