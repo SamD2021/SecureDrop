@@ -81,14 +81,12 @@ class SecureDrop:
         
         # check contact has reciprocated
         # check contact is online
-        # Create a client socket
-        # client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # # Connect to the server
-        # server_address = ('localhost', 12345)
-        # client_socket.connect(server_address)
-        # # Receive data from the server
-        # data = client_socket.recv(1024)
-        # print('Received:', data.decode('utf-8'))
+        s = socket.socket()
+        port = 2020
+        s.connect(('192.168.5.30', port))
+        print(s.recv(1024))
+        s.close()
+
         # # Check our contacts.json
         # # Close the connection
         # client_socket.close()
@@ -136,13 +134,16 @@ def decrypt_text(key_file_name, encrypted_text):
 
 def main(): 
  
-# a forever loop until we interrupt it or
-# an error occurs
-while True:
     s = socket.socket()
     port = 2020
     s.bind(('', port))
-    s.listen(5)   
+    s.listen(5)    
+
+    while True:
+        c, addr = s.accept()
+        print ('Got connection from', addr )
+        c.send(b'Thank you for connecting')
+        c.close() 
   
     # Check if needs to register or login
     my_secure_drop = SecureDrop()
