@@ -54,20 +54,20 @@ data = {'command': "record_contact.json", 'data': contact_json}
 send_data(client_socket, data)
 mySecureDrop.main_loop()
 # Receive data from the server
-received_data = receive_data(client_socket)
+# received_data = receive_data(client_socket)
 
-if received_data is not None:
-    # Extract encrypted text from the received data
-    encrypted_text = received_data.get("encrypted_text", "")
-
-    # Perform decryption on the client side
-    # decrypted_text = decrypt_text("key_file.key", encrypted_text)
-    # if decrypted_text is not None:
-    #     print("Decrypted Text:", decrypted_text)
-    # else:
-    #     print("Decryption failed.")
-else:
-    print("Error receiving or decoding data.")
+# if received_data is not None:
+#     # Extract encrypted text from the received data
+#     encrypted_text = received_data.get("encrypted_text", "")
+#
+#     # Perform decryption on the client side
+#     # decrypted_text = decrypt_text("key_file.key", encrypted_text)
+#     # if decrypted_text is not None:
+#     #     print("Decrypted Text:", decrypted_text)
+#     # else:
+#     #     print("Decryption failed.")
+# else:
+#     print("Error receiving or decoding data.")
 
 # Close the connection
 client_socket.close()

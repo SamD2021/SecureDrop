@@ -71,7 +71,11 @@ class SecureDrop:
 
         data = {'command': 'list_contacts', 'data': self.__user_id}
         received_data = send_data(self.__socket, data)
-        # print(received_data)
+        for contact_id in received_data['contacts']:
+            filename = os.path.join(os.getcwd(), contact_id, "name.bin")
+            for contact in contacts:
+                if contact['UserID'] == contact_id:
+                    print(f"* {decrypt_text(filename, contact['Data'])} <{contact_id}>")
         # check user has the added the contact
         # check contact has reciprocated
         # check contact is online
