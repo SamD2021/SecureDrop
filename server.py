@@ -46,10 +46,13 @@ def handle_client(conn, addr, connections: list):
                 # Get all contact.json of all people online
                 # Simulating the list of online contacts
                 client_contacts = []
-                contact_info = connections[-1]
+                #contact_info = connections[-1]
                 for single_connection_info in connections:
-                    if contact_info["userID"] in single_connection_info["contacts"]:
-                        client_contacts.append(single_connection_info["userID"])
+                    if single_connection_info["conn"] != conn:
+                        for single_contact in single_connection_info["contacts"]:
+                            print(f"Comparing {data} with {single_contact['UserID']}")
+                            if data == single_contact['UserID']:
+                                client_contacts.append(single_connection_info['userID'])
                 response_data = {"contacts": client_contacts}
                 conn.sendall(json.dumps(response_data).encode())
 

@@ -69,9 +69,9 @@ class SecureDrop:
         except FileNotFoundError or ValueError:
             contacts = []
 
-        data = {'command': 'list_contacts'}
+        data = {'command': 'list_contacts', 'data': self.__user_id}
         received_data = send_data(self.__socket, data)
-        print(received_data)
+        # print(received_data)
         # check user has the added the contact
         # check contact has reciprocated
         # check contact is online
