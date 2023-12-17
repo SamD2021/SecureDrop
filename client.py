@@ -59,6 +59,12 @@ def main():
         # elif want to register a user, prompt the different info and take in user input
         elif s == 'y':
             register()
+            try:
+                with open(userjson, "r") as file:
+                    data = json.load(file)
+            except FileNotFoundError:
+                print("Failed to get any data after registering")
+                return
     user_id = login(data)
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     if len(argv) >= 3:
