@@ -8,6 +8,7 @@ from securedrop import SecureDrop
 
 def main():
     # Check if needs to register or login
+    userLogin.register()
     my_secure_drop = SecureDrop()
     my_secure_drop.main_loop()
 

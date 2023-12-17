@@ -1,9 +1,10 @@
 import os
 import json
+
 from contact import Contact
 from cryptography.fernet import Fernet
 from socket import socket
-import time
+
 
 class SecureDrop:
 
@@ -44,8 +45,8 @@ class SecureDrop:
         filename = os.path.join(os.getcwd(), email_address)
         os.makedirs(filename, exist_ok=True)
         filename = os.path.join(filename, "name.bin")
-        generate_key(filename)
-        encrypted_name = encrypt_text(full_name, filename)
+        self.generate_key(filename)
+        encrypted_name = self.encrypt_text(full_name, filename)
 
         filename = os.path.join(os.getcwd(), self.__contact_info)
 
@@ -60,6 +61,7 @@ class SecureDrop:
         updated_data = json.dumps(data, indent=2)
         with open(filename, 'w') as file:
             file.write(updated_data)
+        print("Contact Added.")
 
     def list_command(self):
 
@@ -71,11 +73,15 @@ class SecureDrop:
 
         data = {'command': 'list_contacts', 'data': self.__user_id}
         received_data = send_data(self.__socket, data)
-        for contact_id in received_data['contacts']:
-            filename = os.path.join(os.getcwd(), contact_id, "name.bin")
-            for contact in contacts:
-                if contact['UserID'] == contact_id:
-                    print(f"* {decrypt_text(filename, contact['Data'])} <{contact_id}>")
+        if len(received_data['contacts']) > 0:
+            print("The following contacts are online:")
+            for contact_id in received_data['contacts']:
+                filename = os.path.join(os.getcwd(), contact_id, "name.bin")
+                for contact in contacts:
+                    if contact['UserID'] == contact_id:
+                        print(f"* {self.decrypt_text(filename, contact['Data'])} <{contact_id}>")
+        else:
+            print("No contacts are online at this time!")
         # check user has the added the contact
         # check contact has reciprocated
         # check contact is online
@@ -91,6 +97,72 @@ class SecureDrop:
         # # Close the connection
         # client_socket.close()
 
+    @staticmethod
+    def decrypt_text(key_file_name, encrypted_text):
+        # Reading the key from the key file
+        with open(key_file_name, "rb") as key_file:
+            key = key_file.read()
+
+        # Generating the key using the key read in
+        cipher_suite = Fernet(key)
+
+        # Decrypting text
+        try:
+            decrypted_text = cipher_suite.decrypt(encrypted_text.encode()).decode()
+            return decrypted_text
+        except Exception as e:
+            print(f"Error decrypting text: {e}")
+            return None
+
+    @staticmethod
+    def decrypt_text_inplace(encrypted_text):
+        # Reading the key from the key file
+        key = Fernet.generate_key()
+        # Generating the key using the key read in
+        cipher_suite = Fernet(key)
+
+        # Decrypting text
+        try:
+            decrypted_text = cipher_suite.decrypt(encrypted_text.encode()).decode()
+            return decrypted_text
+        except Exception as e:
+            print(f"Error decrypting text: {e}")
+            return None
+    @staticmethod
+    def encrypt_text(text, key_file_name="none"):
+        # Reading the key from the key file
+        with open(key_file_name, "rb") as key_file:
+            key = key_file.read()
+
+        # Generating the key using the key read in
+        cipher_suite = Fernet(key)
+
+        with open(key_file_name, "wb") as key_file:
+            key_file.write(key)
+
+        # Encrypting text
+        encrypted_text = cipher_suite.encrypt(text.encode()).decode()
+        return encrypted_text
+
+    @staticmethod
+    def encrypt_text_inplace(text):
+        # Reading the key from the key file
+        key = Fernet.generate_key()
+
+        # Generating the key using the key read in
+        cipher_suite = Fernet(key)
+
+        # Encrypting text
+        encrypted_text = cipher_suite.encrypt(text.encode()).decode()
+        return encrypted_text
+
+    @staticmethod
+    def generate_key(key_file_name):
+        # Generates a key and saves it to a file
+        key = Fernet.generate_key()
+        with open(key_file_name, "wb") as key_file:
+            key_file.write(key)
+
 
 def has_added_contact(user_contacts, contact_id):
     return contact_id in user_contacts
@@ -102,29 +174,6 @@ def has_reciprocated(user_contacts, contact_id):
 
 def is_contact_online(online_contacts, contact_id):
     return contact_id in online_contacts
-
-
-def generate_key(key_file_name):
-    # Generates a key and saves it to a file
-    key = Fernet.generate_key()
-    with open(key_file_name, "wb") as key_file:
-        key_file.write(key)
-
-
-def encrypt_text(text, key_file_name, ):
-    # Reading the key from the key file
-    with open(key_file_name, "rb") as key_file:
-        key = key_file.read()
-
-    # Generating the key using the key read in
-    cipher_suite = Fernet(key)
-
-    with open(key_file_name, "wb") as key_file:
-        key_file.write(key)
-
-    # Encrypting text
-    encrypted_text = cipher_suite.encrypt(text.encode()).decode()
-    return encrypted_text
 
 
 def receive_data(client_socket):
@@ -143,28 +192,13 @@ def receive_data(client_socket):
         print(f"Error decoding JSON: {e}")
         return None
 
+
 def send_data(client_socket, data):
     # Send data to the server
     client_socket.sendall(json.dumps(data).encode())
 
     # Receive the response from the server
     response_data = receive_data(client_socket)
-    if response_data:
-        print(f"Server response: {response_data}")
+    # if response_data:
+    #     print(f"Server response: {response_data}")
     return response_data
-
-def decrypt_text(key_file_name, encrypted_text):
-    # Reading the key from the key file
-    with open(key_file_name, "rb") as key_file:
-        key = key_file.read()
-
-    # Generating the key using the key read in
-    cipher_suite = Fernet(key)
-
-    # Decrypting text
-    try:
-        decrypted_text = cipher_suite.decrypt(encrypted_text.encode()).decode()
-        return decrypted_text
-    except Exception as e:
-        print(f"Error decrypting text: {e}")
-        return None
