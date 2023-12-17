@@ -1,6 +1,7 @@
 import socket
 import json
 from securedrop import SecureDrop
+from sys import argv
 
 
 def receive_data(client_socket):
@@ -19,6 +20,7 @@ def receive_data(client_socket):
         print(f"Error decoding JSON: {e}")
         return None
 
+
 def send_data(client_socket, data):
     # Send data to the server
     client_socket.sendall(json.dumps(data).encode())
@@ -32,19 +34,24 @@ def send_data(client_socket, data):
 
 # Example usage
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_address = ('localhost', 12345)
+if len(argv) >= 3:
+    server_address = (argv[1], int(argv[2]))
+
+    print(server_address)
+else:
+    server_address = ('localhost', 12345)
 client_socket.connect(server_address)
 user_id = "samuel_dasilva@student.uml.edu"
 mySecureDrop = SecureDrop(client_socket, user_id)
 data = {'command': "add_connection_ids", 'data': user_id}
-send_data(client_socket,data)
+send_data(client_socket, data)
 try:
     with open("contacts.json", 'r') as file:
         contact_json = json.load(file)
 except FileNotFoundError or ValueError:
     contact_json = []
 data = {'command': "record_contact.json", 'data': contact_json}
-send_data(client_socket,data)
+send_data(client_socket, data)
 mySecureDrop.main_loop()
 # Receive data from the server
 received_data = receive_data(client_socket)

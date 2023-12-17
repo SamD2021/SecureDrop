@@ -98,12 +98,15 @@ def count_connections():
         time.sleep(5)
 
 
-if len(argv) >= 3:
-    server_address = (argv[1], argv[2])
-else:
-    server_address = ('localhost', 12345)
 # Create a socket for the server
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+if len(argv) >= 3:
+    server_address = (argv[1], int(argv[2]))
+
+    print(server_address)
+else:
+    server_address = ('localhost', 12345)
 server_socket.bind(server_address)
 server_socket.listen(5)
 
