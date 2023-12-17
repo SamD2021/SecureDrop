@@ -1,4 +1,5 @@
 import json
+import os
 import socket
 from cryptography.fernet import Fernet
 import time
@@ -23,6 +24,16 @@ def receive_data(client_socket):
         print(f"Error decoding JSON: {e}")
         return None
 
+def get_key_file_name(contact_email):
+    # Construct the path to the contact's folder directly in the current working directory
+    contact_folder = os.path.join(os.getcwd(), contact_email)
+
+    # The key file is named 'name.bin' and is located inside the contact's folder
+    key_file_name = os.path.join(contact_folder, "name.bin")
+
+    return key_file_name
+
+
 
 def handle_client(conn, addr, connections: list):
     print(f"New connection from {addr}")
@@ -30,7 +41,7 @@ def handle_client(conn, addr, connections: list):
     # Simulating server-initiated request by sending initial data to the client
     #initial_data = {"message": "Hello, client! This is a server-initiated message."}
     #conn.sendall(json.dumps(initial_data).encode())
-
+    file_data = {}
     try:
         while True:
             # Receive the client's request
@@ -76,6 +87,47 @@ def handle_client(conn, addr, connections: list):
                 response_data = {"response": "Contact json added successfully"}
                 conn.sendall(json.dumps(response_data).encode())
 
+            elif command == "send_chunk":
+                # Process the incoming file chunk
+                sequence = received_data['sequence']
+                file_name = received_data['file_name']
+                user_id = received_data['contact_email']  # This should be the sender's user ID
+                encrypted_chunk = received_data['data'].encode('utf-8')
+
+                # Decrypt the chunk
+                key_file_name = get_key_file_name(user_id)  # Implement this function
+                with open(key_file_name, "rb") as key_file:
+                    key = key_file.read()
+                cipher_suite = Fernet(key)
+                chunk = cipher_suite.decrypt(encrypted_chunk)
+
+                # Write the chunk to a temporary file
+                if (user_id, file_name) not in file_data:
+                    file_data[(user_id, file_name)] = open(f"{file_name}.part", 'wb')
+
+                # Append chunk to file
+                file_data[(user_id, file_name)].write(chunk)
+
+                # Acknowledge the receipt of the chunk
+                response_data = {'status': 'ok'}
+                conn.sendall(json.dumps(response_data).encode())
+                
+            elif command == "end_transfer":
+                # Finalize file transfer
+                file_name = received_data['file_name']
+                user_id = received_data['contact_email']  # This should be the sender's user ID
+
+                # Close the file
+                if (user_id, file_name) in file_data:
+                    file_data[(user_id, file_name)].close()
+                    del file_data[(user_id, file_name)]
+
+                # Move the temporary file to its final destination
+                os.rename(f"{file_name}.part", f"received_{file_name}")
+
+                # Acknowledge the completion of file transfer
+                response_data = {'status': 'ok', 'message': 'File transfer complete.'}
+                conn.sendall(json.dumps(response_data).encode())
             print(connections)
 
             time.sleep(5)  # Simulating some processing time

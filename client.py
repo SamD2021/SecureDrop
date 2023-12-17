@@ -1,9 +1,7 @@
-import os.path
 import socket
 import json
 from securedrop import SecureDrop
 from sys import argv
-from userLogin import login, register
 
 
 def receive_data(client_socket):
@@ -29,63 +27,47 @@ def send_data(client_socket, data):
 
     # Receive the response from the server
     response_data = receive_data(client_socket)
-    # if response_data:
-    #     print(f"Server response: {response_data}")
+    if response_data:
+        print(f"Server response: {response_data}")
     return response_data
 
 
 # Example usage
-def main():
-    userjson = os.path.join(os.getcwd(), 'users', "users.json")
-    os.makedirs(os.path.join(os.getcwd(), 'users'),exist_ok=True)
-    # Check if the path exists
-    # Open file and check if any users registered
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+if len(argv) >= 3:
+    server_address = (argv[1], int(argv[2]))
 
-    try:
-        with open(userjson, "r") as file:
-            data = json.load(file)
-    except FileNotFoundError:
-        with open(userjson, "w") as file:
-            file.write("[]")
-            data = []
-    # if file only has 2 charcters it is 'empty' just a placeholder
-    if len(data) <= 0:
-        print('No users are registered with this client.')
-        s = input('Do you want to register a new user (y/n)?')
+    print(server_address)
+else:
+    server_address = ('localhost', 12345)
+client_socket.connect(server_address)
+user_id = "mark_schmidt@student.uml.edu"
+mySecureDrop = SecureDrop(client_socket, user_id)
+data = {'command': "add_connection_ids", 'data': user_id}
+send_data(client_socket, data)
+try:
+    with open("contacts.json", 'r') as file:
+        contact_json = json.load(file)
+except FileNotFoundError or ValueError:
+    contact_json = []
+data = {'command': "record_contact.json", 'data': contact_json}
+send_data(client_socket, data)
+mySecureDrop.main_loop()
+# Receive data from the server
+# received_data = receive_data(client_socket)
 
-        # if do not want to register a user, quit
-        if s == 'n':
-            quit()
-        # elif want to register a user, prompt the different info and take in user input
-        elif s == 'y':
-            register()
-            try:
-                with open(userjson, "r") as file:
-                    data = json.load(file)
-            except FileNotFoundError:
-                print("Failed to get any data after registering")
-                return
-    user_id = login(data)
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    if len(argv) >= 3:
-        server_address = (argv[1], int(argv[2]))
+# if received_data is not None:
+#     # Extract encrypted text from the received data
+#     encrypted_text = received_data.get("encrypted_text", "")
+#
+#     # Perform decryption on the client side
+#     # decrypted_text = decrypt_text("key_file.key", encrypted_text)
+#     # if decrypted_text is not None:
+#     #     print("Decrypted Text:", decrypted_text)
+#     # else:
+#     #     print("Decryption failed.")
+# else:
+#     print("Error receiving or decoding data.")
 
-        print(server_address)
-    else:
-        server_address = ('localhost', 12345)
-    client_socket.connect(server_address)
-    mySecureDrop = SecureDrop(client_socket, user_id)
-    data = {'command': "add_connection_ids", 'data': user_id}
-    send_data(client_socket, data)
-    try:
-        with open("contacts.json", 'r') as file:
-            contact_json = json.load(file)
-    except FileNotFoundError or ValueError:
-        contact_json = []
-    data = {'command': "record_contact.json", 'data': contact_json}
-    send_data(client_socket, data)
-    mySecureDrop.main_loop()
-    client_socket.close()
-
-
-main()
+# Close the connection
+client_socket.close()
