@@ -59,8 +59,7 @@ def main():
         # elif want to register a user, prompt the different info and take in user input
         elif s == 'y':
             register()
-    else:
-        user_id = login(data)
+    user_id = login(data)
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     if len(argv) >= 3:
         server_address = (argv[1], int(argv[2]))
