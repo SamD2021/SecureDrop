@@ -28,8 +28,8 @@ def handle_client(conn, addr, connections: list):
     print(f"New connection from {addr}")
 
     # Simulating server-initiated request by sending initial data to the client
-    # initial_data = {"message": "Hello, client! This is a server-initiated message."}
-    # conn.sendall(json.dumps(initial_data).encode())
+    #initial_data = {"message": "Hello, client! This is a server-initiated message."}
+    #conn.sendall(json.dumps(initial_data).encode())
 
     try:
         while True:
