@@ -26,7 +26,7 @@ def send_data(client_socket, data):
     # Receive the response from the server
     response_data = receive_data(client_socket)
     if response_data:
-        print(f"Server response: {response_data.decode()}")
+        print(f"Server response: {response_data}")
     return response_data
 
 
@@ -37,15 +37,14 @@ client_socket.connect(server_address)
 user_id = "samuel_dasilva@student.uml.edu"
 mySecureDrop = SecureDrop(client_socket, user_id)
 data = {'command': "add_connection_ids", 'data': user_id}
-client_socket.sendall(json.dumps(data).encode())
+send_data(client_socket,data)
 try:
     with open("contacts.json", 'r') as file:
         contact_json = json.load(file)
 except FileNotFoundError or ValueError:
     contact_json = []
 data = {'command': "record_contact.json", 'data': contact_json}
-client_socket.sendall(json.dumps(data).encode())
-
+send_data(client_socket,data)
 mySecureDrop.main_loop()
 # Receive data from the server
 received_data = receive_data(client_socket)

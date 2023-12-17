@@ -4,6 +4,7 @@ from cryptography.fernet import Fernet
 import time
 import socket
 import threading
+from sys import argv
 
 
 def receive_data(client_socket):
@@ -23,7 +24,7 @@ def receive_data(client_socket):
         return None
 
 
-def handle_client(conn, addr, connection_info):
+def handle_client(conn, addr, connections: list):
     print(f"New connection from {addr}")
 
     # Simulating server-initiated request by sending initial data to the client
@@ -44,12 +45,10 @@ def handle_client(conn, addr, connection_info):
             if command == "list_contacts":
                 # Get all contact.json of all people online
                 # Simulating the list of online contacts
-                userID = connection_info['userID']
                 client_contacts = []
+                contact_info = connections[-1]
                 for single_connection_info in connections:
-                    contacts = single_connection_info["contacts"]
-                    if contacts.get(userID):
-                        # If the client is found in the contact.json, add them to the list
+                    if contact_info["userID"] in single_connection_info["contacts"]:
                         client_contacts.append(single_connection_info["userID"])
                 response_data = {"contacts": client_contacts}
                 conn.sendall(json.dumps(response_data).encode())
@@ -61,15 +60,20 @@ def handle_client(conn, addr, connection_info):
                 # Update the userID in connection_info
 
                 for single_connection_info in connections:
-
                     if single_connection_info["conn"] == conn:
                         single_connection_info["userID"] = data
+
+                response_data = {"response": "Connection id added successfully"}
+                conn.sendall(json.dumps(response_data).encode())
+
             elif command == "record_contact.json":
                 for single_connection_info in connections:
                     if single_connection_info["conn"] == conn:
                         single_connection_info["contacts"] = data
+                response_data = {"response": "Contact json added successfully"}
+                conn.sendall(json.dumps(response_data).encode())
 
-            print(connection_info["userID"])
+            print(connections)
 
             time.sleep(5)  # Simulating some processing time
 
@@ -94,9 +98,12 @@ def count_connections():
         time.sleep(5)
 
 
+if len(argv) >= 3:
+    server_address = (argv[1], argv[2])
+else:
+    server_address = ('localhost', 12345)
 # Create a socket for the server
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_address = ('localhost', 12345)
 server_socket.bind(server_address)
 server_socket.listen(5)
 
@@ -114,10 +121,10 @@ while True:
     connection_info = {
         "conn": conn,
         "addr": addr,
-        "userID": None,
+        "userID": "Guest",
         "contacts": dict,
     }
     connections.append(connection_info)
     # Handle the client in a separate thread
-    client_thread = threading.Thread(target=handle_client, args=(conn,addr,connection_info))
+    client_thread = threading.Thread(target=handle_client, args=(conn, addr, connections))
     client_thread.start()
