@@ -135,7 +135,6 @@ class SecureDrop:
         file_path = input("Enter path to the file: ")
         contact_email = input("Enter the email of the contact to send to: ")
         status, public_key_str = self.send_file_transfer_request(contact_email, file_path)
-        public_key_base64 = base64.b64encode(public_key_str).decode('utf-8')
         if status == 'approved':
 
             # Ensure the file exists
@@ -163,7 +162,7 @@ class SecureDrop:
             #     key = key_file.read()
 
             # Generating the key using the key read in
-            cipher_suite = Fernet(public_key_base64)
+            cipher_suite = Fernet(public_key_str)
 
             # Open the file and read in chunks
             with open(file_path, 'rb') as file:
