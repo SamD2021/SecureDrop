@@ -1,19 +1,11 @@
 import os
 import json
+import random
 import threading
 from contact import Contact
 from cryptography.fernet import Fernet
 from socket import socket
 import time
-
-
-def request_user_approval(sender_email, file_name, file_size):
-    print(f"File transfer request from {sender_email}: {file_name} ({file_size} bytes)")
-
-    # Prompt the user for approval
-    response = input("Do you want to accept the file? (yes/no): ").lower()
-
-    return response == 'yes'
 
 
 class SecureDrop:
@@ -23,13 +15,13 @@ class SecureDrop:
         self.__contacts = []
         self.__contact_info = "contacts.json"
         self.__socket = client_socket
+        self.__recipient_key = ""
         # Add a flag to control the notification thread
         self.notification_thread_flag = threading.Event()
         self.notification_thread_flag.set()  # Initially, the thread is allowed to run
 
         # Create a thread for handling notifications
         self.notification_thread = threading.Thread(target=self.notification_handler)
-        self.notification_thread.start()
 
     def notification_handler(self):
         while self.notification_thread_flag.is_set():
@@ -59,6 +51,7 @@ class SecureDrop:
                 self.stop_notification_thread()  # Stop the notification thread before exiting
                 break
             elif command.lower() == "receive":
+                self.notification_thread.start()
                 self.receive_file_transfer_requests()
             else:
                 print("Not a valid command, try one of the following: ")
@@ -137,7 +130,7 @@ class SecureDrop:
     def send_command(self):
         file_path = input("Enter path to the file: ")
         contact_email = input("Enter the email of the contact to send to: ")
-        status = self.send_file_transfer_request(contact_email, file_path)
+        status, key = self.send_file_transfer_request(contact_email, file_path)
         if status == 'approved':
 
             # Ensure the file exists
@@ -160,9 +153,9 @@ class SecureDrop:
                 return
 
             # Get the key for encryption from the contact's key file
-            key_file_name = os.path.join(os.getcwd(), contact_email, "name.bin")
-            with open(key_file_name, "rb") as key_file:
-                key = key_file.read()
+            # key_file_name = os.path.join(os.getcwd(), contact_email, "name.bin")
+            # with open(key_file_name, "rb") as key_file:
+            #     key = key_file.read()
 
             # Generating the key using the key read in
             cipher_suite = Fernet(key)
@@ -170,7 +163,7 @@ class SecureDrop:
             # Open the file and read in chunks
             with open(file_path, 'rb') as file:
                 chunk_size = 1024  # 1MB chunk size
-                sequence_number = 0
+                sequence_number = random.randint(0, 1000000)  # Random seed for the sequence_number
                 while True:
                     print("Reading....")
                     chunk = file.read(chunk_size)
@@ -202,9 +195,9 @@ class SecureDrop:
                     sequence_number += 1  # Increment the sequence number for each chunk
 
             # Send a message indicating the transfer is complete
-            send_data(self.__socket,
-                      {'command': 'end_transfer', 'file_name': os.path.basename(file_path), 'contact_email': contact_email})
-            print("File transfer complete.")
+            response = send_data(self.__socket,
+                      {'command': 'end_transfer', 'file_name': os.path.basename(file_path), 'contact_email': contact_email, 'sequence': sequence_number})
+            print(f"{response}")
         else:
             print("User rejected the file transfer request")
 
@@ -223,22 +216,55 @@ class SecureDrop:
         file_size = received_data.get('file_size', 0)
 
         # Notify the user about the incoming file and await their response
-        user_response = request_user_approval(sender_email, file_name, file_size)
+        user_response = self.request_user_approval(sender_email, file_name, file_size)
 
+        status = 'approved' if user_response else 'rejected'
+
+        if user_response:
+            cipher_suite = Fernet(Fernet.generate_key())
+            response_data = {'status': status, 'key': cipher_suite}
+            send_data(self.__socket, response_data)
+            self.receive_file_transfer_requests()
+        else:
+            response_data = {'status': status}
+            send_data(self.__socket, response_data)
         # Send the user's response back to the server
-        response_data = {'status': 'approved' if user_response else 'rejected'}
-        send_data(self.__socket, response_data)
 
         # If approved, proceed with file transfer
-        if user_response:
-            # Handle file transfer logic
-            pass
+
+    def handle_receive_chunk_request(self, received_data):
+        file_data = {}
+        sender_email = received_data.get('contact_email', '')
+        file_name = received_data.get('file_name', '')
+        encrypted_chunk = received_data.get('data', '')
+        sequence_number = received_data.get('sequence', '')
+
+        key_file_name = get_key_file_name(user_id)  # Implement this function
+        with open(key_file_name, "rb") as key_file:
+            key = key_file.read()
+        cipher_suite = Fernet(key)
+        chunk = cipher_suite.decrypt(encrypted_chunk)
+
+        # Write the chunk to a temporary file
+        if (sender_email, file_name) not in file_data:
+            file_data[(sender_email, file_name)] = open(f"{file_name}.part", 'wb')
+
+        # Append chunk to file
+        file_data[(sender_email, file_name)].write(chunk)
+
+        sequence_number += 1
+
+        # Send the user's response back to the server
+        response_data = {'status': 'ok'}
+        send_data(self.__socket, response_data)
 
     def receive_file_transfer_requests(self):
         # Check for incoming file transfer requests from the server
         data = receive_data(self.__socket)
         if data and data.get('command') == 'file_transfer_request':
             self.handle_file_transfer_request(data)
+        elif data and data.get('command') == 'receive_chunk':
+            self.handle_receive_chunk_request()
         else:
             print("No file transfer requests at the moment.")
 
@@ -255,7 +281,8 @@ class SecureDrop:
         }
         received_data = send_data(self.__socket, data)
         status = received_data.get('status', "")
-        return status
+        key = received_data.get('key', "")
+        return status, key
 
 
     @staticmethod
