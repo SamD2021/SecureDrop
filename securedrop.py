@@ -131,13 +131,87 @@ class SecureDrop:
     # # Close the connection
     # client_socket.close()
 
+    # def send_command(self):
+    #     file_path = input("Enter path to the file: ")
+    #     contact_email = input("Enter the email of the contact to send to: ")
+    #     status, public_key_str = self.send_file_transfer_request(contact_email, file_path)
+    #
+    #     if status == 'approved':
+    #
+    #         # Ensure the file exists
+    #         if not os.path.isfile(file_path):
+    #             print("File does not exist.")
+    #             return
+    #
+    #         # Load contacts from the contacts.json file
+    #         try:
+    #             with open('contacts.json', 'r') as file:
+    #                 contacts = json.load(file)
+    #         except (FileNotFoundError, json.JSONDecodeError):
+    #             print("Error loading contacts. Please make sure contacts.json exists and is valid.")
+    #             return
+    #
+    #         # Check if the contact exists in the contacts list
+    #         contact_exists = any(contact['UserID'].lower() == contact_email for contact in contacts)
+    #         if not contact_exists:
+    #             print("Contact not found. Please check the email address.")
+    #             return
+    #
+    #         # Get the key for encryption from the contact's key file
+    #         # key_file_name = os.path.join(os.getcwd(), contact_email, "name.bin")
+    #         # with open(key_file_name, "rb") as key_file:
+    #         #     key = key_file.read()
+    #
+    #
+    #         # Generating the key using the key read in
+    #
+    #         # Open the file and read in chunks
+    #         with open(file_path, 'rb') as file:
+    #             chunk_size = 1024  # 1MB chunk size
+    #             sequence_number = random.randint(0, 1000000)  # Random seed for the sequence_number
+    #             while True:
+    #                 print("Reading....")
+    #                 chunk = file.read(chunk_size)
+    #                 if not chunk:
+    #                     break  # End of file
+    #
+    #                 encrypted_chunk = cipher_suite.encrypt(chunk)  # Encrypt the chunk
+    #
+    #                 # Prepare the data to be sent
+    #                 data = {
+    #                     'command': 'send_chunk',
+    #                     'sequence': sequence_number,
+    #                     'data': encrypted_chunk.decode('utf-8'),  # JSON must be in text form
+    #                     'file_name': os.path.basename(file_path),
+    #                     'contact_email': contact_email
+    #                 }
+    #
+    #                 # Send the chunk to the server
+    #                 print(f"Data: {data}")
+    #                 response = send_data(self.__socket, data)
+    #
+    #                 # Wait for the server to acknowledge receipt
+    #                 if not response or response.get('status') != 'ok':
+    #                     print("Failed to send chunk or server response was not okay.")
+    #                     return
+    #                 else:
+    #                     print(f"Getting a response with sequence number {sequence_number}")
+    #
+    #                 sequence_number += 1  # Increment the sequence number for each chunk
+    #
+    #         # Send a message indicating the transfer is complete
+    #         response = send_data(self.__socket,
+    #                              {'command': 'end_transfer', 'file_name': os.path.basename(file_path),
+    #                               'contact_email': contact_email, 'sequence': sequence_number})
+    #         print(f"{response}")
+    #     else:
+    #         print("User rejected the file transfer request")
     def send_command(self):
         file_path = input("Enter path to the file: ")
         contact_email = input("Enter the email of the contact to send to: ")
         status, public_key_str = self.send_file_transfer_request(contact_email, file_path)
 
         if status == 'approved':
-
             # Ensure the file exists
             if not os.path.isfile(file_path):
                 print("File does not exist.")
@@ -157,13 +231,9 @@ class SecureDrop:
                 print("Contact not found. Please check the email address.")
                 return
 
-            # Get the key for encryption from the contact's key file
-            # key_file_name = os.path.join(os.getcwd(), contact_email, "name.bin")
-            # with open(key_file_name, "rb") as key_file:
-            #     key = key_file.read()
-
-            # Generating the key using the key read in
-            cipher_suite = Fernet(base64.urlsafe_b64encode(public_key_str.encode()))
+            # Generate the Fernet cipher suite using the recipient's public key
+            recipient_public_key_bytes = base64.b64decode(public_key_str.encode('utf-8'))
+            cipher_suite = Fernet(recipient_public_key_bytes)
 
             # Open the file and read in chunks
             with open(file_path, 'rb') as file:
