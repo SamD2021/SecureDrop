@@ -43,4 +43,4 @@ def generate_and_export_keypair():
     private_key_pem = export_private_key(private_key)
     public_key_pem = export_public_key(public_key)
 
-    return private_key_pem, public_key_pem
+    return private_key_pem, public_key_pem, private_key, public_key

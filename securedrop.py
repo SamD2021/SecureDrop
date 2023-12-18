@@ -28,7 +28,7 @@ class SecureDrop:
         # Add a flag to control the notification thread
         self.notification_thread_flag = threading.Event()
         self.notification_thread_flag.set()  # Initially, the thread is allowed to run
-        self.private_key = ""
+        self.private_key: rsa.RSAPrivateKey
 
         # Create a thread for handling notifications
         self.notification_thread = threading.Thread(target=self.notification_handler)
@@ -304,11 +304,11 @@ class SecureDrop:
         status = 'approved' if user_response else 'rejected'
 
         if user_response:
-            private_key_str, public_key_str = keyGen.generate_and_export_keypair()
+            private_key_str, public_key_str, private_key = keyGen.generate_and_export_keypair()
 
             private_key_base64 = base64.b64encode(private_key_str).decode('utf-8')
             public_key_base64 = base64.b64encode(public_key_str).decode('utf-8')
-            self.private_key = private_key_base64
+            self.private_key = private_key
             response_data = {'status': status, 'key': public_key_base64}
             send_data(self.__socket, response_data)
             self.receive_file_transfer_requests()
@@ -337,6 +337,7 @@ class SecureDrop:
     def receive_file_transfer_requests(self):
         # Check for incoming file transfer requests from the server
         data = receive_data(self.__socket)
+        print(f"received{data}")
         if data and data.get('command') == 'file_transfer_request':
             self.handle_file_transfer_request(data)
         elif data and data.get('command') == 'receive_chunk':
@@ -454,8 +455,15 @@ class SecureDrop:
             for chunk in file_chunks:
                 encrypted_data = chunk['data'].encode('utf-8')
                 # Decrypt the chunk here before writing to destination file
-                decrypted_chunk = self.decrypt_text(self.private_key, encrypted_data)
-                destination_file.write(decrypted_chunk.encode())
+                self.private_key: rsa.RSAPrivateKey
+                decrypted_chunk = self.private_key.decrypt(
+                    chunk,
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                        algorithm=hashes.SHA256(),
+                        label=None
+                    ))
+                destination_file.write(decrypted_chunk)
 
         # Clean up the file entry in self.__file_being_sent
         self.__file_being_sent = [chunk for chunk in self.__file_being_sent if
