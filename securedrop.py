@@ -239,10 +239,10 @@ class SecureDrop:
         encrypted_chunk = received_data.get('data', '')
         sequence_number = received_data.get('sequence', '')
 
-        key_file_name = get_key_file_name(user_id)  # Implement this function
-        with open(key_file_name, "rb") as key_file:
-            key = key_file.read()
-        cipher_suite = Fernet(key)
+        # key_file_name = get_key_file_name(user_id)  # Implement this function
+        # with open(key_file_name, "rb") as key_file:
+        #     key = key_file.read()
+        cipher_suite = Fernet()
         chunk = cipher_suite.decrypt(encrypted_chunk)
 
         # Write the chunk to a temporary file
