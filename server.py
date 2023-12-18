@@ -118,6 +118,7 @@ def handle_client(conn, addr, connections: list):
 
                     # Wait for the recipient to acknowledge receipt
                     response = receive_data(recipient_conn_info['conn'])
+                    print(f"response{response}")
                     if not response or response.get('status') != 'ok':
                         print("Failed to send chunk or recipient response was not okay.")
                         break
