@@ -8,6 +8,10 @@ from socket import socket
 import time
 import keyGen
 import base64
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
 
 
 class SecureDrop:
@@ -211,6 +215,8 @@ class SecureDrop:
     def send_command(self):
         file_path = input("Enter path to the file: ")
         contact_email = input("Enter the email of the contact to send to: ")
+
+        # Send file transfer request and get the status and public key
         status, public_key_str = self.send_file_transfer_request(contact_email, file_path)
 
         if status == 'approved':
@@ -219,47 +225,44 @@ class SecureDrop:
                 print("File does not exist.")
                 return
 
-            # Load contacts from the contacts.json file
-            try:
-                with open('contacts.json', 'r') as file:
-                    contacts = json.load(file)
-            except (FileNotFoundError, json.JSONDecodeError):
-                print("Error loading contacts. Please make sure contacts.json exists and is valid.")
-                return
-
-            # Check if the contact exists in the contacts list
-            contact_exists = any(contact['UserID'].lower() == contact_email for contact in contacts)
-            if not contact_exists:
-                print("Contact not found. Please check the email address.")
-                return
-
-            # Generate the Fernet cipher suite using the recipient's public key
+            # Convert the base64-encoded public key to bytes
             recipient_public_key_bytes = base64.b64decode(public_key_str.encode('utf-8'))
-            cipher_suite = Fernet(recipient_public_key_bytes)
+
+            # Load the recipient's public key
+            recipient_public_key = serialization.load_pem_public_key(
+                recipient_public_key_bytes,
+                backend=default_backend()
+            )
 
             # Open the file and read in chunks
             with open(file_path, 'rb') as file:
                 chunk_size = 1024  # 1MB chunk size
                 sequence_number = random.randint(0, 1000000)  # Random seed for the sequence_number
                 while True:
-                    print("Reading....")
                     chunk = file.read(chunk_size)
                     if not chunk:
                         break  # End of file
 
-                    encrypted_chunk = cipher_suite.encrypt(chunk)  # Encrypt the chunk
+                    # Encrypt the chunk with the recipient's public key
+                    encrypted_chunk = recipient_public_key.encrypt(
+                        chunk,
+                        padding.OAEP(
+                            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                            algorithm=hashes.SHA256(),
+                            label=None
+                        )
+                    )
 
                     # Prepare the data to be sent
                     data = {
                         'command': 'send_chunk',
                         'sequence': sequence_number,
-                        'data': encrypted_chunk.decode('utf-8'),  # JSON must be in text form
+                        'data': base64.b64encode(encrypted_chunk).decode('utf-8'),  # JSON must be in text form
                         'file_name': os.path.basename(file_path),
                         'contact_email': contact_email
                     }
 
                     # Send the chunk to the server
-                    print(f"Data: {data}")
                     response = send_data(self.__socket, data)
 
                     # Wait for the server to acknowledge receipt
@@ -449,7 +452,7 @@ class SecureDrop:
             for chunk in file_chunks:
                 encrypted_data = chunk['data'].encode('utf-8')
                 # Decrypt the chunk here before writing to destination file
-                decrypted_chunk = self.decrypt_text(self.private_key,encrypted_data)
+                decrypted_chunk = self.decrypt_text(self.private_key, encrypted_data)
                 destination_file.write(decrypted_chunk.encode())
 
         # Clean up the file entry in self.__file_being_sent
@@ -457,6 +460,7 @@ class SecureDrop:
                                   chunk['file_name'] != file_name or chunk['sender_email'] != sender_email]
 
         print(f"File {file_name} has been successfully reconstructed at {destination_path}.")
+
 
 def has_added_contact(user_contacts, contact_id):
     return contact_id in user_contacts
