@@ -6,6 +6,7 @@ from contact import Contact
 from cryptography.fernet import Fernet
 from socket import socket
 import time
+import keyGen
 
 
 class SecureDrop:
@@ -20,6 +21,7 @@ class SecureDrop:
         # Add a flag to control the notification thread
         self.notification_thread_flag = threading.Event()
         self.notification_thread_flag.set()  # Initially, the thread is allowed to run
+        self.private_key = ""
 
         # Create a thread for handling notifications
         self.notification_thread = threading.Thread(target=self.notification_handler)
