@@ -227,7 +227,7 @@ class SecureDrop:
         if user_response:
             private_key, public_key = keyGen.generatekeypair()
             self.private_key = private_key
-            response_data = {'status': status, 'key': public_key}
+            response_data = {'status': status, 'key': keyGen.export_public_key(public_key)}
             send_data(self.__socket, response_data)
             self.receive_file_transfer_requests()
         else:
