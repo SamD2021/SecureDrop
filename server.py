@@ -22,7 +22,9 @@ def receive_data(client_socket):
         return decoded_data
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON: {e}")
+        print(f"{data}")
         return None
+
 
 def get_key_file_name(contact_email):
     # Construct the path to the contact's folder directly in the current working directory
@@ -34,13 +36,12 @@ def get_key_file_name(contact_email):
     return key_file_name
 
 
-
 def handle_client(conn, addr, connections: list):
     print(f"New connection from {addr}")
 
     # Simulating server-initiated request by sending initial data to the client
-    #initial_data = {"message": "Hello, client! This is a server-initiated message."}
-    #conn.sendall(json.dumps(initial_data).encode())
+    # initial_data = {"message": "Hello, client! This is a server-initiated message."}
+    # conn.sendall(json.dumps(initial_data).encode())
     file_data = {}
     try:
         while True:
@@ -51,13 +52,13 @@ def handle_client(conn, addr, connections: list):
                 break
 
             command = received_data.get("command", "")
-            data = received_data.get("data", "")
 
             if command == "list_contacts":
                 # Get all contact.json of all people online
                 # Simulating the list of online contacts
+                data = received_data.get("data", "")
                 client_contacts = []
-                #contact_info = connections[-1]
+                # contact_info = connections[-1]
                 for single_connection_info in connections:
                     if single_connection_info["conn"] != conn:
                         for single_contact in single_connection_info["contacts"]:
@@ -72,6 +73,7 @@ def handle_client(conn, addr, connections: list):
             elif command == "add_connection_ids":
 
                 # Update the userID in connection_info
+                data = received_data.get("data", "")
 
                 for single_connection_info in connections:
                     if single_connection_info["conn"] == conn:
@@ -81,6 +83,7 @@ def handle_client(conn, addr, connections: list):
                 conn.sendall(json.dumps(response_data).encode())
 
             elif command == "record_contact.json":
+                data = received_data.get("data", "")
                 for single_connection_info in connections:
                     if single_connection_info["conn"] == conn:
                         single_connection_info["contacts"] = data
@@ -89,10 +92,11 @@ def handle_client(conn, addr, connections: list):
 
             elif command == "send_chunk":
                 # Process the incoming file chunk
-                sequence = received_data['sequence']
-                file_name = received_data['file_name']
-                user_id = received_data['contact_email']  # This should be the sender's user ID
-                encrypted_chunk = received_data['data'].encode('utf-8')
+
+                sequence = received_data.get('sequence', "")
+                file_name = received_data.get('file_name', "")
+                user_id = received_data.get('contact_email', "")  # This should be the sender's user ID
+                encrypted_chunk = received_data.get('data', "").encode('utf-8')
 
                 # Decrypt the chunk
                 key_file_name = get_key_file_name(user_id)  # Implement this function
@@ -108,14 +112,16 @@ def handle_client(conn, addr, connections: list):
                 # Append chunk to file
                 file_data[(user_id, file_name)].write(chunk)
 
+                sequence += 1
                 # Acknowledge the receipt of the chunk
-                response_data = {'status': 'ok'}
+                response_data = {'status': 'ok', 'sequence': sequence}
                 conn.sendall(json.dumps(response_data).encode())
-                
+
             elif command == "end_transfer":
                 # Finalize file transfer
-                file_name = received_data['file_name']
-                user_id = received_data['contact_email']  # This should be the sender's user ID
+                print("end_transfer started")
+                file_name = received_data.get('file_name')
+                user_id = received_data.get('contact_email')  # This should be the sender's user ID
 
                 # Close the file
                 if (user_id, file_name) in file_data:
@@ -128,6 +134,25 @@ def handle_client(conn, addr, connections: list):
                 # Acknowledge the completion of file transfer
                 response_data = {'status': 'ok', 'message': 'File transfer complete.'}
                 conn.sendall(json.dumps(response_data).encode())
+            elif command == "request_file_transfer":
+                recipient_email = received_data.get('recipient_email', '')
+                file_name = received_data.get('file_name', '')
+                file_size = received_data.get('file_size', 0)
+
+                # Check if the recipient is online
+                recipient_conn_info = next((info for info in connections if info["userID"] == recipient_email), None)
+
+                if recipient_conn_info:
+                    # Notify the recipient about the incoming file transfer
+                    response_data = {
+                        'command': 'file_transfer_request',
+                        'sender_email': user_id,  # or use any sender identifier
+                        'file_name': file_name,
+                        'file_size': file_size,
+                    }
+                    recipient_conn_info['conn'].sendall(json.dumps(response_data).encode())
+                else:
+                    print(f"Recipient {recipient_email} is not online.")
             print(connections)
 
             time.sleep(5)  # Simulating some processing time
