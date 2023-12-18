@@ -24,7 +24,7 @@ class SecureDrop:
             elif command.lower() == "list":
                 self.list_command()
             elif command.lower() == "send":
-                self.send_command()
+                # self.send_command()
             elif command.lower() == "exit":
                 break
             else:
