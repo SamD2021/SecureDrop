@@ -134,6 +134,7 @@ class SecureDrop:
         file_path = input("Enter path to the file: ")
         contact_email = input("Enter the email of the contact to send to: ")
         status, key = self.send_file_transfer_request(contact_email, file_path)
+        key = key.decode('utf-8')
         if status == 'approved':
 
             # Ensure the file exists
