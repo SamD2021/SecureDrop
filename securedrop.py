@@ -19,6 +19,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 class SecureDrop:
 
     def __init__(self, client_socket: socket, user_id="Guest"):
+        self.private_key: rsa.RSAPrivateKey = None
         self.__user_id = user_id
         self.__contacts = []
         self.__contact_info = "contacts.json"
@@ -28,7 +29,6 @@ class SecureDrop:
         # Add a flag to control the notification thread
         self.notification_thread_flag = threading.Event()
         self.notification_thread_flag.set()  # Initially, the thread is allowed to run
-        self.private_key: rsa.RSAPrivateKey
 
         # Create a thread for handling notifications
         self.notification_thread = threading.Thread(target=self.notification_handler)
@@ -304,11 +304,12 @@ class SecureDrop:
         status = 'approved' if user_response else 'rejected'
 
         if user_response:
-            private_key_str, public_key_str, private_key = keyGen.generate_and_export_keypair()
+            private_key_str, public_key_str, private_key, public_key = keyGen.generate_and_export_keypair()
 
             private_key_base64 = base64.b64encode(private_key_str).decode('utf-8')
             public_key_base64 = base64.b64encode(public_key_str).decode('utf-8')
-            self.private_key = private_key
+
+            self.private_key: rsa.RSAPrivateKey = private_key
             response_data = {'status': status, 'key': public_key_base64}
             send_data(self.__socket, response_data)
             self.receive_file_transfer_requests()
