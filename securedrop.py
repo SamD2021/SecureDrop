@@ -439,9 +439,9 @@ class SecureDrop:
             print(f"No data for file {file_name} from {sender_email} to reconstruct.")
             return
 
-        # Filter chunks for the specified file and sender
-        file_chunks = [chunk for chunk in self.__file_being_sent if
-                       chunk['file_name'] == file_name and chunk['sender_email'] == sender_email]
+        # # Filter chunks for the specified file and sender
+        # file_chunks = [chunk for chunk in self.__file_being_sent if
+        #                chunk['file_name'] == file_name and chunk['sender_email'] == sender_email]
 
         # Sort chunks by their sequence number
 
