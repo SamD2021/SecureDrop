@@ -146,11 +146,14 @@ def handle_client(conn, addr, connections: list):
                     # Notify the recipient about the incoming file transfer
                     response_data = {
                         'command': 'file_transfer_request',
-                        'sender_email': user_id,  # or use any sender identifier
+                        'sender_email': recipient_email,  # or use any sender identifier
                         'file_name': file_name,
                         'file_size': file_size,
                     }
                     recipient_conn_info['conn'].sendall(json.dumps(response_data).encode())
+                    response = receive_data(recipient_conn_info['conn'])
+                    if response and response['status'] == 'approved' or response['status'] == 'rejected':
+                        conn.sendall(json.dumps(response_data).encode())
                 else:
                     print(f"Recipient {recipient_email} is not online.")
             print(connections)

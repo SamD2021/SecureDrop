@@ -1,9 +1,19 @@
 import os
 import json
-
+import threading
 from contact import Contact
 from cryptography.fernet import Fernet
 from socket import socket
+import time
+
+
+def request_user_approval(sender_email, file_name, file_size):
+    print(f"File transfer request from {sender_email}: {file_name} ({file_size} bytes)")
+
+    # Prompt the user for approval
+    response = input("Do you want to accept the file? (yes/no): ").lower()
+
+    return response == 'yes'
 
 
 class SecureDrop:
@@ -13,6 +23,26 @@ class SecureDrop:
         self.__contacts = []
         self.__contact_info = "contacts.json"
         self.__socket = client_socket
+        # Add a flag to control the notification thread
+        self.notification_thread_flag = threading.Event()
+        self.notification_thread_flag.set()  # Initially, the thread is allowed to run
+
+        # Create a thread for handling notifications
+        self.notification_thread = threading.Thread(target=self.notification_handler)
+        self.notification_thread.start()
+
+    def notification_handler(self):
+        while self.notification_thread_flag.is_set():
+            # Implement logic to check for notifications from the server
+            # You might use the receive_data function or another mechanism
+            self.receive_file_transfer_requests()
+
+            # Example: Check for notifications every 5 seconds
+            time.sleep(5)
+
+    def stop_notification_thread(self):
+        # Set the flag to stop the notification thread
+        self.notification_thread_flag.clear()
 
     def main_loop(self):
         while True:
@@ -26,6 +56,7 @@ class SecureDrop:
             elif command.lower() == "send":
                 self.send_command()
             elif command.lower() == "exit":
+                self.stop_notification_thread()  # Stop the notification thread before exiting
                 break
             elif command.lower() == "receive":
                 self.receive_file_transfer_requests()
@@ -88,95 +119,123 @@ class SecureDrop:
         else:
             print("No contacts are online at this time!")
         # check user has the added the contact
-       # check contact has reciprocated
-        # check contact is online
-        # Create a client socket
-        # client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # # Connect to the server
-        # server_address = ('localhost', 12345)
-        # client_socket.connect(server_address)
-        # # Receive data from the server
-        # data = client_socket.recv(1024)
-        # print('Received:', data.decode('utf-8'))
-        # # Check our contacts.json
-        # # Close the connection
-        # client_socket.close()
+
+    # check contact has reciprocated
+    # check contact is online
+    # Create a client socket
+    # client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # # Connect to the server
+    # server_address = ('localhost', 12345)
+    # client_socket.connect(server_address)
+    # # Receive data from the server
+    # data = client_socket.recv(1024)
+    # print('Received:', data.decode('utf-8'))
+    # # Check our contacts.json
+    # # Close the connection
+    # client_socket.close()
 
     def send_command(self):
         file_path = input("Enter path to the file: ")
         contact_email = input("Enter the email of the contact to send to: ")
-        self.send_file_transfer_request(contact_email, file_path)
+        status = self.send_file_transfer_request(contact_email, file_path)
+        if status == 'approved':
 
+            # Ensure the file exists
+            if not os.path.isfile(file_path):
+                print("File does not exist.")
+                return
 
-        # Ensure the file exists
-        if not os.path.isfile(file_path):
-            print("File does not exist.")
-            return
+            # Load contacts from the contacts.json file
+            try:
+                with open('contacts.json', 'r') as file:
+                    contacts = json.load(file)
+            except (FileNotFoundError, json.JSONDecodeError):
+                print("Error loading contacts. Please make sure contacts.json exists and is valid.")
+                return
 
-        # Load contacts from the contacts.json file
-        try:
-            with open('contacts.json', 'r') as file:
-                contacts = json.load(file)
-        except (FileNotFoundError, json.JSONDecodeError):
-            print("Error loading contacts. Please make sure contacts.json exists and is valid.")
-            return
+            # Check if the contact exists in the contacts list
+            contact_exists = any(contact['UserID'].lower() == contact_email for contact in contacts)
+            if not contact_exists:
+                print("Contact not found. Please check the email address.")
+                return
 
-        # Check if the contact exists in the contacts list
-        contact_exists = any(contact['UserID'].lower() == contact_email for contact in contacts)
-        if not contact_exists:
-            print("Contact not found. Please check the email address.")
-            return
+            # Get the key for encryption from the contact's key file
+            key_file_name = os.path.join(os.getcwd(), contact_email, "name.bin")
+            with open(key_file_name, "rb") as key_file:
+                key = key_file.read()
 
-        # Get the key for encryption from the contact's key file
-        key_file_name = os.path.join(os.getcwd(), contact_email, "name.bin")
-        with open(key_file_name, "rb") as key_file:
-            key = key_file.read()
+            # Generating the key using the key read in
+            cipher_suite = Fernet(key)
 
-        # Generating the key using the key read in
-        cipher_suite = Fernet(key)
+            # Open the file and read in chunks
+            with open(file_path, 'rb') as file:
+                chunk_size = 1024  # 1MB chunk size
+                sequence_number = 0
+                while True:
+                    print("Reading....")
+                    chunk = file.read(chunk_size)
+                    if not chunk:
+                        break  # End of file
 
-        # Open the file and read in chunks
-        with open(file_path, 'rb') as file:
-            chunk_size = 1024  # 1MB chunk size
-            sequence_number = 0
-            while True:
-                print("Reading....")
-                chunk = file.read(chunk_size)
-                if not chunk:
-                    break  # End of file
+                    encrypted_chunk = cipher_suite.encrypt(chunk)  # Encrypt the chunk
 
-                encrypted_chunk = cipher_suite.encrypt(chunk)  # Encrypt the chunk
+                    # Prepare the data to be sent
+                    data = {
+                        'command': 'send_chunk',
+                        'sequence': sequence_number,
+                        'data': encrypted_chunk.decode('utf-8'),  # JSON must be in text form
+                        'file_name': os.path.basename(file_path),
+                        'contact_email': contact_email
+                    }
 
-                # Prepare the data to be sent
-                data = {
-                    'command': 'send_chunk',
-                    'sequence': sequence_number,
-                    'data': encrypted_chunk.decode('utf-8'),  # JSON must be in text form
-                    'file_name': os.path.basename(file_path),
-                    'contact_email': contact_email
-                }
+                    # Send the chunk to the server
+                    print(f"Data: {data}")
+                    response = send_data(self.__socket, data)
 
-                # Send the chunk to the server
-                print(f"Data: {data}")
-                response = send_data(self.__socket, data)
+                    # Wait for the server to acknowledge receipt
+                    if not response or response.get('status') != 'ok':
+                        print("Failed to send chunk or server response was not okay.")
+                        return
+                    else:
+                        print(f"Getting a response with sequence number {sequence_number}")
 
-                # Wait for the server to acknowledge receipt
-                if not response or response.get('status') != 'ok':
-                    print("Failed to send chunk or server response was not okay.")
-                    return
-                else:
-                    print(f"Getting a response with sequence number {sequence_number}")
+                    sequence_number += 1  # Increment the sequence number for each chunk
 
+            # Send a message indicating the transfer is complete
+            send_data(self.__socket,
+                      {'command': 'end_transfer', 'file_name': os.path.basename(file_path), 'contact_email': contact_email})
+            print("File transfer complete.")
+        else:
+            print("User rejected the file transfer request")
 
-                sequence_number += 1  # Increment the sequence number for each chunk
+    @staticmethod
+    def request_user_approval(sender_email, file_name, file_size):
+        print(f"File transfer request from {sender_email}: {file_name} ({file_size} bytes)")
 
-        # Send a message indicating the transfer is complete
-        send_data(self.__socket,
-                  {'command': 'end_transfer', 'file_name': os.path.basename(file_path), 'contact_email': contact_email})
-        print("File transfer complete.")
+        # Prompt the user for approval
+        response = input("Do you want to accept the file? (yes/no): ").lower()
+
+        return response == 'yes'
+
+    def handle_file_transfer_request(self, received_data):
+        sender_email = received_data.get('sender_email', '')
+        file_name = received_data.get('file_name', '')
+        file_size = received_data.get('file_size', 0)
+
+        # Notify the user about the incoming file and await their response
+        user_response = request_user_approval(sender_email, file_name, file_size)
+
+        # Send the user's response back to the server
+        response_data = {'status': 'approved' if user_response else 'rejected'}
+        send_data(self.__socket, response_data)
+
+        # If approved, proceed with file transfer
+        if user_response:
+            # Handle file transfer logic
+            pass
 
     def receive_file_transfer_requests(self):
-    # Check for incoming file transfer requests from the server
+        # Check for incoming file transfer requests from the server
         data = receive_data(self.__socket)
         if data and data.get('command') == 'file_transfer_request':
             self.handle_file_transfer_request(data)
@@ -194,8 +253,11 @@ class SecureDrop:
             'file_name': os.path.basename(file_path),
             'file_size': file_size,
         }
-        send_data(self.__socket, data)
-    
+        received_data = send_data(self.__socket, data)
+        status = received_data.get('status', "")
+        return status
+
+
     @staticmethod
     def decrypt_text(key_file_name, encrypted_text):
         # Reading the key from the key file
