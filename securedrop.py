@@ -444,7 +444,6 @@ class SecureDrop:
                        chunk['file_name'] == file_name and chunk['sender_email'] == sender_email]
 
         # Sort chunks by their sequence number
-        file_chunks.sort(key=lambda chunk: chunk['sequence'])
 
         # The final file path where the reconstructed file will be stored
         destination_path = os.path.join(os.getcwd(), f"{sender_email}_{file_name}.received")
@@ -452,12 +451,12 @@ class SecureDrop:
 
         # Write each chunk to the final file
         with open(destination_path, 'wb') as destination_file:
-            for chunk in file_chunks:
-                encrypted_data = chunk['data'].encode('utf-8')
+            for chunk in self.__file_being_sent:
+                encrypted_data = chunk.encode('utf-8')
                 # Decrypt the chunk here before writing to destination file
                 self.private_key: rsa.RSAPrivateKey
                 decrypted_chunk = self.private_key.decrypt(
-                    chunk,
+                    encrypted_data,
                     padding.OAEP(
                         mgf=padding.MGF1(algorithm=hashes.SHA256()),
                         algorithm=hashes.SHA256(),
@@ -466,8 +465,7 @@ class SecureDrop:
                 destination_file.write(decrypted_chunk)
 
         # Clean up the file entry in self.__file_being_sent
-        self.__file_being_sent = [chunk for chunk in self.__file_being_sent if
-                                  chunk['file_name'] != file_name or chunk['sender_email'] != sender_email]
+        self.__file_being_sent.clear()
 
         print(f"File {file_name} has been successfully reconstructed at {destination_path}.")
 
