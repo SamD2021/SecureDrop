@@ -106,7 +106,9 @@ class SecureDrop:
 
         data = {'command': 'list_contacts', 'data': self.__user_id}
         received_data = send_data(self.__socket, data)
-        if len(received_data['contacts']) > 0:
+
+        contact_len = received_data['contacts']
+        if len(contact_len) > 0:
             print("The following contacts are online:")
             for contact_id in received_data['contacts']:
                 filename = os.path.join(os.getcwd(), contact_id, "name.bin")
