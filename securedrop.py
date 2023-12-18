@@ -16,6 +16,7 @@ class SecureDrop:
         self.__contact_info = "contacts.json"
         self.__socket = client_socket
         self.__recipient_key = ""
+        self.__file_being_sent = []
         # Add a flag to control the notification thread
         self.notification_thread_flag = threading.Event()
         self.notification_thread_flag.set()  # Initially, the thread is allowed to run
@@ -196,7 +197,8 @@ class SecureDrop:
 
             # Send a message indicating the transfer is complete
             response = send_data(self.__socket,
-                      {'command': 'end_transfer', 'file_name': os.path.basename(file_path), 'contact_email': contact_email, 'sequence': sequence_number})
+                                 {'command': 'end_transfer', 'file_name': os.path.basename(file_path),
+                                  'contact_email': contact_email, 'sequence': sequence_number})
             print(f"{response}")
         else:
             print("User rejected the file transfer request")
@@ -221,8 +223,9 @@ class SecureDrop:
         status = 'approved' if user_response else 'rejected'
 
         if user_response:
-            cipher_suite = Fernet(Fernet.generate_key())
-            response_data = {'status': status, 'key': cipher_suite}
+            private_key, public_key = keyGen.generatekeypair()
+            self.private_key = private_key
+            response_data = {'status': status, 'key': public_key}
             send_data(self.__socket, response_data)
             self.receive_file_transfer_requests()
         else:
@@ -233,30 +236,19 @@ class SecureDrop:
         # If approved, proceed with file transfer
 
     def handle_receive_chunk_request(self, received_data):
-        file_data = {}
         sender_email = received_data.get('contact_email', '')
         file_name = received_data.get('file_name', '')
         encrypted_chunk = received_data.get('data', '')
         sequence_number = received_data.get('sequence', '')
 
-        # key_file_name = get_key_file_name(user_id)  # Implement this function
-        # with open(key_file_name, "rb") as key_file:
-        #     key = key_file.read()
-        cipher_suite = Fernet()
-        chunk = cipher_suite.decrypt(encrypted_chunk)
-
-        # Write the chunk to a temporary file
-        if (sender_email, file_name) not in file_data:
-            file_data[(sender_email, file_name)] = open(f"{file_name}.part", 'wb')
-
         # Append chunk to file
-        file_data[(sender_email, file_name)].write(chunk)
+        self.__file_being_sent.append(encrypted_chunk)
 
         sequence_number += 1
 
         # Send the user's response back to the server
-        response_data = {'status': 'ok'}
-        send_data(self.__socket, response_data)
+        response_data = {'status': 'ok', 'sequence_number': sequence_number}
+        self.__socket.sendall(json.dumps(response_data).encode())
 
     def receive_file_transfer_requests(self):
         # Check for incoming file transfer requests from the server
@@ -264,7 +256,9 @@ class SecureDrop:
         if data and data.get('command') == 'file_transfer_request':
             self.handle_file_transfer_request(data)
         elif data and data.get('command') == 'receive_chunk':
-            self.handle_receive_chunk_request()
+            self.handle_receive_chunk_request(data)
+        elif data and data.get('command') == 'reconstruct_file':
+            self.handle_reconstruct_file_request(data)
         else:
             print("No file transfer requests at the moment.")
 
@@ -283,7 +277,6 @@ class SecureDrop:
         status = received_data.get('status', "")
         key = received_data.get('key', "")
         return status, key
-
 
     @staticmethod
     def decrypt_text(key_file_name, encrypted_text):
@@ -352,6 +345,39 @@ class SecureDrop:
         with open(key_file_name, "wb") as key_file:
             key_file.write(key)
 
+    def handle_reconstruct_file_request(self, data):
+        file_name = data.get('file_name', '')
+        sender_email = data.get('contact_email', '')
+
+        # Make sure self.__file_being_sent is a list of strings
+        if not self.__file_being_sent:
+            print(f"No data for file {file_name} from {sender_email} to reconstruct.")
+            return
+
+        # Filter chunks for the specified file and sender
+        file_chunks = [chunk for chunk in self.__file_being_sent if
+                       chunk['file_name'] == file_name and chunk['sender_email'] == sender_email]
+
+        # Sort chunks by their sequence number
+        file_chunks.sort(key=lambda chunk: chunk['sequence'])
+
+        # The final file path where the reconstructed file will be stored
+        destination_path = os.path.join(os.getcwd(), f"{sender_email}_{file_name}.received")
+        os.makedirs(os.path.dirname(destination_path), exist_ok=True)
+
+        # Write each chunk to the final file
+        with open(destination_path, 'wb') as destination_file:
+            for chunk in file_chunks:
+                encrypted_data = chunk['data'].encode('utf-8')
+                # Decrypt the chunk here before writing to destination file
+                decrypted_chunk = self.decrypt_text(self.private_key,encrypted_data)
+                destination_file.write(decrypted_chunk.encode())
+
+        # Clean up the file entry in self.__file_being_sent
+        self.__file_being_sent = [chunk for chunk in self.__file_being_sent if
+                                  chunk['file_name'] != file_name or chunk['sender_email'] != sender_email]
+
+        print(f"File {file_name} has been successfully reconstructed at {destination_path}.")
 
 def has_added_contact(user_contacts, contact_id):
     return contact_id in user_contacts
