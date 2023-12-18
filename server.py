@@ -166,14 +166,13 @@ def handle_client(conn, addr, connections: list):
 
                             # Prepare the data to be sent
                             data = {
-                                'command': 'receive_chunk',
-                                'sequence': sequence_number,  # Random seed for the sequence_number
-                                'data': encrypted_chunk.decode('utf-8'),  # JSON must be in text form
+                                'command': 'reconstruct_file',
+                                'sequence': sequence_number,  # Random seed for the sequence_
                                 'file_name': file_name,
                                 'contact_email': user_id
                             }
 
-                            # Send the chunk to the recipient
+                            # # Send the chunk to the recipient
                             recipient_conn_info['conn'].sendall(json.dumps(data).encode())
 
                             # Wait for the recipient to acknowledge receipt
