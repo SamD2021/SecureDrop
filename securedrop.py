@@ -162,7 +162,7 @@ class SecureDrop:
             #     key = key_file.read()
 
             # Generating the key using the key read in
-            cipher_suite = Fernet(public_key_str)
+            cipher_suite = Fernet(base64.b64encode(public_key_str.encode('utf-8')).decode('utf-8'))
 
             # Open the file and read in chunks
             with open(file_path, 'rb') as file:
