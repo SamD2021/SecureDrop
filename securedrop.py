@@ -230,8 +230,9 @@ class SecureDrop:
             private_key_str, public_key_str = keyGen.generate_and_export_keypair()
 
             private_key_base64 = base64.b64encode(private_key_str).decode('utf-8')
+            public_key_base64 = base64.b64encode(public_key_str).decode('utf-8')
             self.private_key = private_key_base64
-            response_data = {'status': status, 'key': public_key_str}
+            response_data = {'status': status, 'key': public_key_base64}
             send_data(self.__socket, response_data)
             self.receive_file_transfer_requests()
         else:
