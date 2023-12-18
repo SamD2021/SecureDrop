@@ -85,7 +85,7 @@ class SecureDrop:
         else:
             print("No contacts are online at this time!")
         # check user has the added the contact
-        # check contact has reciprocated
+       # check contact has reciprocated
         # check contact is online
         # Create a client socket
         # client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -132,9 +132,10 @@ class SecureDrop:
 
         # Open the file and read in chunks
         with open(file_path, 'rb') as file:
-            chunk_size = 1024 * 1024  # 1MB chunk size
+            chunk_size = 1024  # 1MB chunk size
             sequence_number = 0
             while True:
+                print("Reading....")
                 chunk = file.read(chunk_size)
                 if not chunk:
                     break  # End of file
@@ -151,13 +152,16 @@ class SecureDrop:
                 }
 
                 # Send the chunk to the server
-                send_data(self.__socket, data)
+                print(f"Data: {data}")
+                response = send_data(self.__socket, data)
 
                 # Wait for the server to acknowledge receipt
-                response = receive_data(self.__socket)
                 if not response or response.get('status') != 'ok':
                     print("Failed to send chunk or server response was not okay.")
                     return
+                else:
+                    print(f"Getting a response with sequence number {sequence_number}")
+
 
                 sequence_number += 1  # Increment the sequence number for each chunk
 
