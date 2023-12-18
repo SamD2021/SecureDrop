@@ -7,6 +7,7 @@ from cryptography.fernet import Fernet
 from socket import socket
 import time
 import keyGen
+import base64
 
 
 class SecureDrop:
@@ -133,8 +134,8 @@ class SecureDrop:
     def send_command(self):
         file_path = input("Enter path to the file: ")
         contact_email = input("Enter the email of the contact to send to: ")
-        status, key = self.send_file_transfer_request(contact_email, file_path)
-        key = key.decode('utf-8')
+        status, public_key_str = self.send_file_transfer_request(contact_email, file_path)
+        public_key_base64 = base64.b64encode(public_key_str).decode('utf-8')
         if status == 'approved':
 
             # Ensure the file exists
@@ -162,7 +163,7 @@ class SecureDrop:
             #     key = key_file.read()
 
             # Generating the key using the key read in
-            cipher_suite = Fernet(key)
+            cipher_suite = Fernet(public_key_base64)
 
             # Open the file and read in chunks
             with open(file_path, 'rb') as file:
@@ -226,9 +227,11 @@ class SecureDrop:
         status = 'approved' if user_response else 'rejected'
 
         if user_response:
-            private_key, public_key = keyGen.generatekeypair()
-            self.private_key = private_key
-            response_data = {'status': status, 'key': keyGen.export_public_key(public_key)}
+            private_key_str, public_key_str = keyGen.generate_and_export_keypair()
+
+            private_key_base64 = base64.b64encode(private_key_str).decode('utf-8')
+            self.private_key = private_key_base64
+            response_data = {'status': status, 'key': public_key_str}
             send_data(self.__socket, response_data)
             self.receive_file_transfer_requests()
         else:
