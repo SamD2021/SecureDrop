@@ -11,19 +11,19 @@ def generatekeypair():
 
 def export_private_key(private_key, password=None):
 
-    private_key_pem = private_key.private_bytes(
+    private_key_pem: bytes = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.BestAvailableEncryption(password.encode()) if password else serialization.NoEncryption()
     )
 
-    return private_key_pem
+    return private_key_pem.decode('utf-8')
 
 def export_public_key(public_key):
 
-    public_key_pem = public_key.public_bytes(
+    public_key_pem: bytes = public_key.public_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo
     )
 
-    return public_key_pem
+    return public_key_pem.decode('utf-8')
