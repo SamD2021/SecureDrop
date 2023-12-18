@@ -448,9 +448,9 @@ class SecureDrop:
         # Sort chunks by their sequence number
 
         # The final file path where the reconstructed file will be stored
-        destination_path = os.path.join(os.getcwd(), f"{sender_email}_{file_name}.received")
+        destination_path = os.path.join(os.getcwd(), f"{sender_email}_{file_name}")
         os.makedirs(os.path.dirname(destination_path), exist_ok=True)
-
+        print(self.__file_being_sent)
         # Write each chunk to the final file
         with open(destination_path, 'wb') as destination_file:
             for chunk in self.__file_being_sent:
