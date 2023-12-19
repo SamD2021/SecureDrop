@@ -254,7 +254,7 @@ class SecureDrop:
                             label=None
                         )
                     )
-
+                    sequence_number += 1  # Increment the sequence number for each chunk
                     # Prepare the data to be sent
                     data = {
                         'command': 'send_chunk',
@@ -264,9 +264,11 @@ class SecureDrop:
                         'contact_email': contact_email
                     }
 
+                    print(f"Sent to server:{data}")
                     # Send the chunk to the server
                     response = send_data(self.__socket, data)
 
+                    print(f"Received from server:{response}")
                     # Wait for the server to acknowledge receipt
                     if not response or response.get('status') != 'ok':
                         print("Failed to send chunk or server response was not okay.")
@@ -274,7 +276,6 @@ class SecureDrop:
                     else:
                         print(f"Getting a response with sequence number {sequence_number}")
 
-                    sequence_number += 1  # Increment the sequence number for each chunk
 
 
             print("Sending End_transfer")
