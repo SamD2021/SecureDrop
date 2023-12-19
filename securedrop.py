@@ -337,8 +337,8 @@ class SecureDrop:
         # Send the user's response back to the server
         data = {'status': 'ok', 'sequence_number': sequence_number}
         print(f"Sending:{data}")
+        self.__socket.sendall(json.dumps(data).encode())
         self.receive_file_transfer_requests()
-
 
 
     def receive_file_transfer_requests(self):
