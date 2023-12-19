@@ -161,31 +161,28 @@ def handle_client(conn, addr, connections: list):
                 # Send the file to the recipient with a random seed for the sequence_number
                 recipient_conn_info = next((info for info in connections if info["userID"] == user_id), None)
                 if recipient_conn_info:
+                    # Prepare the data to be sent
+                    data = {
+                        'command': 'reconstruct_file',
+                        'sequence': sequence_number,  # Random seed for the sequence_
+                        'file_name': file_name,
+                        'contact_email': user_id
+                    }
 
-                    while True:
+                    # # Send the chunk to the recipient
+                    recipient_conn_info['conn'].sendall(json.dumps(data).encode())
+                    print(f"sending:{data}")
 
-                        # Prepare the data to be sent
-                        data = {
-                            'command': 'reconstruct_file',
-                            'sequence': sequence_number,  # Random seed for the sequence_
-                            'file_name': file_name,
-                            'contact_email': user_id
-                        }
+                    # Wait for the recipient to acknowledge receipt
+                    response = receive_data(recipient_conn_info['conn'])
+                    print(f"received:{response}")
+                    if not response or response.get('status') != 'ok':
+                        print("Failed to send chunk or recipient response was not okay.")
+                        break
+                    else:
+                        print(f"Getting a response with sequence number {sequence_number}")
 
-                        # # Send the chunk to the recipient
-                        recipient_conn_info['conn'].sendall(json.dumps(data).encode())
-                        print(f"sending:{data}")
-
-                        # Wait for the recipient to acknowledge receipt
-                        response = receive_data(recipient_conn_info['conn'])
-                        print(f"received:{response}")
-                        if not response or response.get('status') != 'ok':
-                            print("Failed to send chunk or recipient response was not okay.")
-                            break
-                        else:
-                            print(f"Getting a response with sequence number {sequence_number}")
-
-                        sequence_number += 1  # Increment the sequence number for each chunk
+                    sequence_number += 1  # Increment the sequence number for each chunk
 
                 else:
                     print(f"Recipient {user_id} is not online.")
