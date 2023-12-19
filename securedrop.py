@@ -19,7 +19,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 class SecureDrop:
 
     def __init__(self, client_socket: socket, user_id="Guest"):
-        self.private_key: bytes = None
+        self.private_key: rsa.RSAPrivateKey = None
         self.__user_id = user_id
         self.__contacts = []
         self.__contact_info = "contacts.json"
@@ -315,7 +315,7 @@ class SecureDrop:
             private_key_base64 = base64.b64encode(private_key_str).decode('utf-8')
             public_key_base64 = base64.b64encode(public_key_str).decode('utf-8')
 
-            self.private_key = private_key_base64
+            self.private_key: rsa.RSAPrivateKey = private_key
             response_data = {'status': status, 'key': public_key_base64}
             send_data(self.__socket, response_data)
             self.receive_file_transfer_requests()
@@ -466,15 +466,11 @@ class SecureDrop:
             for chunk in self.__file_being_sent:
                 encrypted_data = chunk
 
+                encrypted_data_base64 = base64.b64decode(encrypted_data)
 
                 # Decrypt the chunk here before writing to destination file
-                recipient_private_key = serialization.load_pem_private_key(
-                    self.private_key,
-                    backend=default_backend(),
-                    password=None
-                )
-                decrypted_chunk = recipient_private_key.decrypt(
-                    encrypted_data,
+                decrypted_chunk = self.private_key.decrypt(
+                    encrypted_data_base64,
                     padding.OAEP(
                         mgf=padding.MGF1(algorithm=hashes.SHA256()),
                         algorithm=hashes.SHA256(),
