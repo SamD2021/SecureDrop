@@ -464,7 +464,7 @@ class SecureDrop:
         # Write each chunk to the final file
         with open(destination_path, 'wb') as destination_file:
             for chunk in self.__file_being_sent:
-                encrypted_data = chunk.encode('utf-8')
+                encrypted_data = chunk
                 # Decrypt the chunk here before writing to destination file
                 self.private_key: rsa.RSAPrivateKey
                 decrypted_chunk = self.private_key.decrypt(
