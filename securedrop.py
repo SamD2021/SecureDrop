@@ -343,7 +343,7 @@ class SecureDrop:
     def receive_file_transfer_requests(self):
         # Check for incoming file transfer requests from the server
         data = receive_data(self.__socket)
-        print(f"received{data}")
+        print(f"received in receive_file_transfer_requests{data}")
         if data and data.get('command') == 'file_transfer_request':
             self.handle_file_transfer_request(data)
         elif data and data.get('command') == 'receive_chunk':
@@ -437,6 +437,7 @@ class SecureDrop:
             key_file.write(key)
 
     def handle_reconstruct_file_request(self, data):
+        print("At reconstruct_file_request")
         file_name = data.get('file_name', '')
         sender_email = data.get('contact_email', '')
 
