@@ -225,7 +225,7 @@ def count_connections():
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 if len(argv) >= 3:
-    server_address = ('', int(argv[2]))
+    server_address = ('0.0.0.0', int(argv[2]))
 
     print(server_address)
 else:
@@ -254,3 +254,4 @@ while True:
     # Handle the client in a separate thread
     client_thread = threading.Thread(target=handle_client, args=(conn, addr, connections))
     client_thread.start()
+
