@@ -238,7 +238,7 @@ class SecureDrop:
 
             # Open the file and read in chunks
             with open(file_path, 'rb') as file:
-                chunk_size = 1024  # 1MB chunk size
+                chunk_size = 2048  # 1MB chunk size
                 sequence_number = random.randint(0, 1000000)  # Random seed for the sequence_number
                 while True:
                     chunk = file.read(chunk_size)
