@@ -241,8 +241,8 @@ class SecureDrop:
                 chunk_size = 1024  # 1MB chunk size
                 sequence_number = random.randint(0, 1000000)  # Random seed for the sequence_number
                 while True:
-                    print(f"Chunk{chunk} in send_chunk")
                     chunk = file.read(chunk_size)
+                    print(f"Chunk:{chunk} in send_chunk")
                     if not chunk:
                         break  # End of file
 
