@@ -111,7 +111,6 @@ def handle_client(conn, addr, connections: list):
                         'contact_email': user_id
                     }
                     print(f"Sending:{data}")
-
                     # Send the chunk to the recipient
                     recipient_conn_info['conn'].sendall(json.dumps(data).encode())
 
@@ -123,21 +122,6 @@ def handle_client(conn, addr, connections: list):
                         break
                     else:
                         print(f"Getting a response with sequence number {sequence_number}")
-                # Decrypt the chunk
-                # key_file_name = get_key_file_name(user_id)  # Implement this function
-                # with open(key_file_name, "rb") as key_file:
-                #     key = key_file.read()
-                # cipher_suite = Fernet(key)
-                # chunk = cipher_suite.decrypt(encrypted_chunk)
-
-                # # Write the chunk to a temporary file
-                # if (user_id, file_name) not in file_data:
-                #     file_data[(user_id, file_name)] = open(f"{file_name}.part", 'wb')
-
-                # # Append chunk to file
-                # file_data[(user_id, file_name)].write(chunk)
-
-                # Acknowledge the receipt of the chunk
 
                 response_data = {'status': 'ok', 'sequence': sequence_number}
                 conn.sendall(json.dumps(response_data).encode())

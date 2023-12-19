@@ -241,6 +241,7 @@ class SecureDrop:
                 chunk_size = 1024  # 1MB chunk size
                 sequence_number = random.randint(0, 1000000)  # Random seed for the sequence_number
                 while True:
+                    print(f"Chunk{chunk} in send_chunk")
                     chunk = file.read(chunk_size)
                     if not chunk:
                         break  # End of file
@@ -266,7 +267,9 @@ class SecureDrop:
 
                     print(f"Sent to server:{data}")
                     # Send the chunk to the server
-                    response = send_data(self.__socket, data)
+                    self.__socket.sendall(json.dumps(data).encode())
+                    time.sleep(5)
+                    response = receive_data(self.__socket)
 
                     print(f"Received from server:{response}")
                     # Wait for the server to acknowledge receipt
