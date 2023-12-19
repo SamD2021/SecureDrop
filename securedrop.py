@@ -276,11 +276,13 @@ class SecureDrop:
 
                     sequence_number += 1  # Increment the sequence number for each chunk
 
+
+            print("Sending End_transfer")
             # Send a message indicating the transfer is complete
             response = send_data(self.__socket,
                                  {'command': 'end_transfer', 'file_name': os.path.basename(file_path),
                                   'contact_email': contact_email, 'sequence': sequence_number})
-            print(f"{response}")
+            print(f"received:{response}")
         else:
             print("User rejected the file transfer request")
 
