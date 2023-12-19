@@ -238,7 +238,7 @@ class SecureDrop:
 
             # Open the file and read in chunks
             with open(file_path, 'rb') as file:
-                chunk_size = 2048  # 1MB chunk size
+                chunk_size = 1024  # 1MB chunk size
                 sequence_number = random.randint(0, 1000000)  # Random seed for the sequence_number
                 while True:
                     chunk = file.read(chunk_size)
@@ -334,6 +334,7 @@ class SecureDrop:
 
         # Append chunk to file
         self.__file_being_sent.append(encrypted_chunk)
+        print(f"In handle receive_chunk {self.__file_being_sent}")
 
         sequence_number += 1
 
