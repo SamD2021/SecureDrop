@@ -482,6 +482,7 @@ class SecureDrop:
         self.__file_being_sent.clear()
 
         print(f"File {file_name} has been successfully reconstructed at {destination_path}.")
+        self.stop_notification_thread()
 
 
 def has_added_contact(user_contacts, contact_id):

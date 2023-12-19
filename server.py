@@ -225,7 +225,7 @@ def count_connections():
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 if len(argv) >= 3:
-    server_address = (argv[1], int(argv[2]))
+    server_address = ('', int(argv[2]))
 
     print(server_address)
 else:
