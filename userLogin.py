@@ -24,7 +24,7 @@ def login(toParse):
 
 	while decrypted_password != salted_password:
 		print('Email and password combinations invalid! Re-enter password.')
-		print(f"decrypted_password {decrypted_password}, salted_password {salted_password}")
+		# print(f"decrypted_password {decrypted_password}, salted_password {salted_password}")
 		email = input('Enter e-mail address: ').lower()
 		print('Enter password: ')
 		password = getpass.getpass()
