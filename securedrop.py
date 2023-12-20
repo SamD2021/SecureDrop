@@ -370,9 +370,10 @@ class SecureDrop:
             'file_size': file_size,
         }
         received_data = send_data(self.__socket, data)
-        status = received_data.get('status', "")
-        key = received_data.get('key', "")
-        return status, key
+        if received_data:
+            status = received_data.get('status', "")
+            key = received_data.get('key', "")
+            return status, key
 
     @staticmethod
     def decrypt_text(key_file_name, encrypted_text):
