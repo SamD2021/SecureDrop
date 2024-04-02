@@ -63,15 +63,14 @@ def handle_client(conn, addr, connections: list):
                     if single_connection_info["conn"] != conn:
                         for single_contact in single_connection_info["contacts"]:
                             print(f"Comparing {data} with {single_contact['UserID']}")
-                            if data == single_contact['UserID']:
-                                client_contacts.append(single_connection_info['userID'])
+                            if data == single_contact["UserID"]:
+                                client_contacts.append(single_connection_info["userID"])
                 response_data = {"contacts": client_contacts}
                 conn.sendall(json.dumps(response_data).encode())
 
                 # List to store contacts of the client
 
             elif command == "add_connection_ids":
-
                 # Update the userID in connection_info
                 data = received_data.get("data", "")
 
@@ -94,44 +93,56 @@ def handle_client(conn, addr, connections: list):
                 # Process the incoming file chunk
 
                 print(f"received:{received_data}")
-                sequence_number = received_data.get('sequence', "")
-                file_name = received_data.get('file_name', "")
-                user_id = received_data.get('contact_email', "")  # This should be the sender's user ID
-                encrypted_chunk = received_data.get('data', "").encode('utf-8')
+                sequence_number = received_data.get("sequence", "")
+                file_name = received_data.get("file_name", "")
+                user_id = received_data.get(
+                    "contact_email", ""
+                )  # This should be the sender's user ID
+                encrypted_chunk = received_data.get("data", "").encode("utf-8")
                 sequence_number += 1
 
                 # Send the file to the recipient with a random seed for the sequence_number
-                recipient_conn_info = next((info for info in connections if info["userID"] == user_id), None)
+                recipient_conn_info = next(
+                    (info for info in connections if info["userID"] == user_id), None
+                )
                 if recipient_conn_info:
                     data = {
-                        'command': 'receive_chunk',
-                        'sequence': sequence_number,  # Random seed for the sequence_number
-                        'data': encrypted_chunk.decode('utf-8'),  # JSON must be in text form
-                        'file_name': file_name,
-                        'contact_email': user_id
+                        "command": "receive_chunk",
+                        "sequence": sequence_number,  # Random seed for the sequence_number
+                        "data": encrypted_chunk.decode(
+                            "utf-8"
+                        ),  # JSON must be in text form
+                        "file_name": file_name,
+                        "contact_email": user_id,
                     }
                     print(f"Sending:{data}")
                     # Send the chunk to the recipient
-                    recipient_conn_info['conn'].sendall(json.dumps(data).encode())
+                    recipient_conn_info["conn"].sendall(json.dumps(data).encode())
 
                     # Wait for the recipient to acknowledge receipt
-                    response = receive_data(recipient_conn_info['conn'])
+                    response = receive_data(recipient_conn_info["conn"])
                     print(f"response{response}")
-                    if not response or response.get('status') != 'ok':
-                        print("Failed to send chunk or recipient response was not okay.")
+                    if not response or response.get("status") != "ok":
+                        print(
+                            "Failed to send chunk or recipient response was not okay."
+                        )
                         break
                     else:
-                        print(f"Getting a response with sequence number {sequence_number}")
+                        print(
+                            f"Getting a response with sequence number {sequence_number}"
+                        )
 
-                response_data = {'status': 'ok', 'sequence': sequence_number}
+                response_data = {"status": "ok", "sequence": sequence_number}
                 conn.sendall(json.dumps(response_data).encode())
 
             elif command == "end_transfer":
                 # Finalize file transfer
                 print("end_transfer started")
-                file_name = received_data.get('file_name')
-                user_id = received_data.get('contact_email')  # This should be the sender's user ID
-                sequence_number = received_data.get('sequence')
+                file_name = received_data.get("file_name")
+                user_id = received_data.get(
+                    "contact_email"
+                )  # This should be the sender's user ID
+                sequence_number = received_data.get("sequence")
 
                 # # Close the file
                 # if (user_id, file_name) in file_data:
@@ -143,56 +154,71 @@ def handle_client(conn, addr, connections: list):
 
                 # Acknowledge the completion of file transfer
                 # Send the file to the recipient with a random seed for the sequence_number
-                recipient_conn_info = next((info for info in connections if info["userID"] == user_id), None)
+                recipient_conn_info = next(
+                    (info for info in connections if info["userID"] == user_id), None
+                )
                 if recipient_conn_info:
                     # Prepare the data to be sent
                     data = {
-                        'command': 'reconstruct_file',
-                        'sequence': sequence_number,  # Random seed for the sequence_
-                        'file_name': file_name,
-                        'contact_email': user_id
+                        "command": "reconstruct_file",
+                        "sequence": sequence_number,  # Random seed for the sequence_
+                        "file_name": file_name,
+                        "contact_email": user_id,
                     }
 
                     # # Send the chunk to the recipient
-                    recipient_conn_info['conn'].sendall(json.dumps(data).encode())
+                    recipient_conn_info["conn"].sendall(json.dumps(data).encode())
                     print(f"sending:{data}")
 
                     # Wait for the recipient to acknowledge receipt
-                    response = receive_data(recipient_conn_info['conn'])
+                    response = receive_data(recipient_conn_info["conn"])
                     print(f"received:{response}")
-                    if not response or response.get('status') != 'ok':
-                        print("Failed to send chunk or recipient response was not okay.")
+                    if not response or response.get("status") != "ok":
+                        print(
+                            "Failed to send chunk or recipient response was not okay."
+                        )
                         break
                     else:
-                        print(f"Getting a response with sequence number {sequence_number}")
+                        print(
+                            f"Getting a response with sequence number {sequence_number}"
+                        )
 
                     sequence_number += 1  # Increment the sequence number for each chunk
 
                 else:
                     print(f"Recipient {user_id} is not online.")
 
-                response_data = {'status': 'ok', 'message': 'File transfer complete.'}
+                response_data = {"status": "ok", "message": "File transfer complete."}
                 conn.sendall(json.dumps(response_data).encode())
                 print(f"sending:{response_data}")
             elif command == "request_file_transfer":
-                recipient_email = received_data.get('recipient_email', '')
-                file_name = received_data.get('file_name', '')
-                file_size = received_data.get('file_size', 0)
+                recipient_email = received_data.get("recipient_email", "")
+                file_name = received_data.get("file_name", "")
+                file_size = received_data.get("file_size", 0)
 
                 # Check if the recipient is online
-                recipient_conn_info = next((info for info in connections if info["userID"] == recipient_email), None)
+                recipient_conn_info = next(
+                    (info for info in connections if info["userID"] == recipient_email),
+                    None,
+                )
 
                 if recipient_conn_info:
                     # Notify the recipient about the incoming file transfer
                     response_data = {
-                        'command': 'file_transfer_request',
-                        'sender_email': recipient_email,  # or use any sender identifier
-                        'file_name': file_name,
-                        'file_size': file_size,
+                        "command": "file_transfer_request",
+                        "sender_email": recipient_email,  # or use any sender identifier
+                        "file_name": file_name,
+                        "file_size": file_size,
                     }
-                    recipient_conn_info['conn'].sendall(json.dumps(response_data).encode())
-                    response = receive_data(recipient_conn_info['conn'])
-                    if response and response['status'] == 'approved' or response['status'] == 'rejected':
+                    recipient_conn_info["conn"].sendall(
+                        json.dumps(response_data).encode()
+                    )
+                    response = receive_data(recipient_conn_info["conn"])
+                    if (
+                        response
+                        and response["status"] == "approved"
+                        or response["status"] == "rejected"
+                    ):
                         conn.sendall(json.dumps(response).encode())
                 else:
                     print(f"Recipient {recipient_email} is not online.")
@@ -225,11 +251,11 @@ def count_connections():
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 if len(argv) >= 3:
-    server_address = ('0.0.0.0', int(argv[2]))
+    server_address = ("0.0.0.0", int(argv[2]))
 
     print(server_address)
 else:
-    server_address = ('localhost', 12345)
+    server_address = ("localhost", 12345)
 server_socket.bind(server_address)
 server_socket.listen(5)
 
@@ -252,6 +278,7 @@ while True:
     }
     connections.append(connection_info)
     # Handle the client in a separate thread
-    client_thread = threading.Thread(target=handle_client, args=(conn, addr, connections))
+    client_thread = threading.Thread(
+        target=handle_client, args=(conn, addr, connections)
+    )
     client_thread.start()
-
